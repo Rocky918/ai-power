@@ -4,9 +4,12 @@ import AIPowerCore
 @MainActor
 final class AppModel: ObservableObject {
     @Published private(set) var snapshot: RateLimitSnapshot?
+    @Published private(set) var tokenUsage: TokenUsageSnapshot?
     @Published private(set) var targetIsRunning = false
+    @Published private(set) var popoverIsVisible = false
     @Published private(set) var isRefreshing = false
     @Published private(set) var lastError: String?
+    @Published private(set) var tokenUsageError: String?
 
     let settings: AppSettings
     private let client = CodexAppServerClient()
@@ -46,10 +49,14 @@ final class AppModel: ObservableObject {
                 guard let self else { return }
                 self.isRefreshing = false
                 switch result {
-                case .success(let snapshot):
-                    self.snapshot = snapshot
+                case .success(let accountUsage):
+                    self.snapshot = accountUsage.rateLimits
                     self.lastError = nil
-                    self.notifications.evaluate(snapshot: snapshot, settings: self.settings)
+                    if let tokenUsage = accountUsage.tokenUsage {
+                        self.tokenUsage = tokenUsage
+                    }
+                    self.tokenUsageError = accountUsage.tokenUsageError
+                    self.notifications.evaluate(snapshot: accountUsage.rateLimits, settings: self.settings)
                 case .failure(let error):
                     if self.targetIsRunning {
                         self.lastError = error.localizedDescription
@@ -61,6 +68,10 @@ final class AppModel: ObservableObject {
                 }
             }
         }
+    }
+
+    func setPopoverIsVisible(_ visible: Bool) {
+        popoverIsVisible = visible
     }
 
     func stop() {

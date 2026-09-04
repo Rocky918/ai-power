@@ -28,7 +28,18 @@ enum AppServerClientError: LocalizedError {
 }
 
 final class CodexAppServerClient {
-    typealias Completion = (Result<RateLimitSnapshot, Error>) -> Void
+    struct AccountUsageSnapshot {
+        let rateLimits: RateLimitSnapshot
+        let tokenUsage: TokenUsageSnapshot?
+        let tokenUsageError: String?
+    }
+
+    typealias Completion = (Result<AccountUsageSnapshot, Error>) -> Void
+
+    private enum RequestKind {
+        case rateLimits
+        case tokenUsage
+    }
 
     private let queue = DispatchQueue(label: "com.aipower.app-server")
     private var process: Process?
@@ -41,6 +52,8 @@ final class CodexAppServerClient {
     private var requestInFlight = false
     private var nextRequestID = 10
     private var activeRequestID: Int?
+    private var activeRequestKind: RequestKind?
+    private var pendingRateLimits: RateLimitSnapshot?
     private var completions: [Completion] = []
     private var stopping = false
 
@@ -138,7 +151,13 @@ final class CodexAppServerClient {
         let id = nextRequestID
         nextRequestID += 1
         activeRequestID = id
-        send(["method": "account/rateLimits/read", "id": id])
+        if pendingRateLimits == nil {
+            activeRequestKind = .rateLimits
+            send(["method": "account/rateLimits/read", "id": id])
+        } else {
+            activeRequestKind = .tokenUsage
+            send(["method": "account/usage/read", "id": id])
+        }
     }
 
     private func send(_ object: [String: Any]) {
@@ -184,23 +203,57 @@ final class CodexAppServerClient {
             return
         }
 
-        guard id == activeRequestID else { return }
+        guard id == activeRequestID, let requestKind = activeRequestKind else { return }
         requestInFlight = false
         activeRequestID = nil
-        let callbacks = completions
-        completions.removeAll()
+        activeRequestKind = nil
 
-        if let error = Self.errorMessage(in: object) {
-            callbacks.forEach { $0(.failure(AppServerClientError.serverError(error))) }
-        } else {
-            do {
-                let snapshot = try RateLimitParser.parseResponse(object)
-                callbacks.forEach { $0(.success(snapshot)) }
-            } catch {
-                callbacks.forEach { $0(.failure(error)) }
+        switch requestKind {
+        case .rateLimits:
+            if let error = Self.errorMessage(in: object) {
+                failAll(AppServerClientError.serverError(error))
+                return
             }
+            do {
+                pendingRateLimits = try RateLimitParser.parseResponse(object)
+            } catch {
+                failAll(error)
+                return
+            }
+            issueRequestIfPossible()
+
+        case .tokenUsage:
+            guard let rateLimits = pendingRateLimits else {
+                failAll(AppServerClientError.invalidResponse)
+                return
+            }
+
+            let tokenUsage: TokenUsageSnapshot?
+            let tokenUsageError: String?
+            if let error = Self.errorMessage(in: object) {
+                tokenUsage = nil
+                tokenUsageError = error
+            } else {
+                do {
+                    tokenUsage = try TokenUsageParser.parseResponse(object)
+                    tokenUsageError = nil
+                } catch {
+                    tokenUsage = nil
+                    tokenUsageError = error.localizedDescription
+                }
+            }
+
+            let callbacks = completions
+            completions.removeAll()
+            pendingRateLimits = nil
+            let snapshot = AccountUsageSnapshot(
+                rateLimits: rateLimits,
+                tokenUsage: tokenUsage,
+                tokenUsageError: tokenUsageError
+            )
+            callbacks.forEach { $0(.success(snapshot)) }
+            issueRequestIfPossible()
         }
-        issueRequestIfPossible()
     }
 
     private func failAll(_ error: Error) {
@@ -208,6 +261,8 @@ final class CodexAppServerClient {
         completions.removeAll()
         requestInFlight = false
         activeRequestID = nil
+        activeRequestKind = nil
+        pendingRateLimits = nil
         callbacks.forEach { $0(.failure(error)) }
     }
 
@@ -226,6 +281,8 @@ final class CodexAppServerClient {
         initialized = false
         requestInFlight = false
         activeRequestID = nil
+        activeRequestKind = nil
+        pendingRateLimits = nil
     }
 
     private static func errorMessage(in object: [String: Any]) -> String? {

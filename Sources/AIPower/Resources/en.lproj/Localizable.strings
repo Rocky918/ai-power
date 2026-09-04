@@ -28,3 +28,14 @@
 "notification.title" = "AI Power Usage Alert";
 "notification.body" = "%@ has %d%% remaining.";
 "status.tooltip" = "AI Power · Codex usage remaining";
+"token.usage" = "Token usage";
+"token.today" = "Tokens today";
+"token.latest" = "Latest total";
+"token.waiting" = "Waiting for server data";
+"token.unavailable" = "Temporarily unavailable";
+"token.server.updated" = "Server total · Updated just now";
+"token.showing.last" = "Server total · Showing last data";
+"token.delayed" = "%@ · Data may be delayed";
+"reset.cards" = "Reset cards";
+"reset.cards.count" = "%d available";
+"reset.cards.expires" = "Expires %@";

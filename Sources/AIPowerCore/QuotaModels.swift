@@ -59,12 +59,14 @@ public struct RateLimitSnapshot: Equatable, Sendable {
     public let windows: [QuotaWindow]
     public let planType: String?
     public let creditBalance: String?
+    public let resetCredits: RateLimitResetCredits?
     public let receivedAt: Date
 
     public init(
         windows: [QuotaWindow],
         planType: String?,
         creditBalance: String?,
+        resetCredits: RateLimitResetCredits? = nil,
         receivedAt: Date = Date()
     ) {
         self.windows = windows.sorted {
@@ -75,6 +77,7 @@ public struct RateLimitSnapshot: Equatable, Sendable {
         }
         self.planType = planType
         self.creditBalance = creditBalance
+        self.resetCredits = resetCredits
         self.receivedAt = receivedAt
     }
 
@@ -94,6 +97,44 @@ public struct RateLimitSnapshot: Equatable, Sendable {
         let shorter = windows.filter { $0.id != menuWindow.id }
         guard !shorter.isEmpty else { return nil }
         return shorter.map(\.severity).max()
+    }
+}
+
+public struct RateLimitResetCredits: Equatable, Sendable {
+    public let availableCount: Int
+    public let earliestExpiration: Date?
+
+    public init(availableCount: Int, earliestExpiration: Date?) {
+        self.availableCount = max(0, availableCount)
+        self.earliestExpiration = earliestExpiration
+    }
+}
+
+public struct DailyTokenUsageBucket: Equatable, Sendable {
+    public let startDate: String
+    public let tokens: Int64
+
+    public init(startDate: String, tokens: Int64) {
+        self.startDate = startDate
+        self.tokens = max(0, tokens)
+    }
+}
+
+public struct TokenUsageSnapshot: Equatable, Sendable {
+    public let dailyBuckets: [DailyTokenUsageBucket]
+    public let receivedAt: Date
+
+    public init(dailyBuckets: [DailyTokenUsageBucket], receivedAt: Date = Date()) {
+        self.dailyBuckets = dailyBuckets.sorted { $0.startDate < $1.startDate }
+        self.receivedAt = receivedAt
+    }
+
+    public var latestBucket: DailyTokenUsageBucket? {
+        dailyBuckets.last
+    }
+
+    public func bucket(startingOn date: String) -> DailyTokenUsageBucket? {
+        dailyBuckets.last { $0.startDate == date }
     }
 }
 

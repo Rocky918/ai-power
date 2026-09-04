@@ -16,6 +16,13 @@ func expect(_ condition: @autoclosure () -> Bool, _ message: String) throws {
 
 do {
     let result: [String: Any] = [
+        "rateLimitResetCredits": [
+            "availableCount": 2,
+            "credits": [
+                ["expiresAt": 1_800_900_000],
+                ["expiresAt": 1_800_800_000]
+            ]
+        ],
         "rateLimitsByLimitId": [
             "codex": [
                 "limitId": "codex", "planType": "plus",
@@ -27,6 +34,11 @@ do {
     let snapshot = try RateLimitParser.parseResult(result)
     try expect(snapshot.windows.count == 2, "dynamic windows were not parsed")
     try expect(snapshot.planType == "plus", "plan type was not parsed")
+    try expect(snapshot.resetCredits?.availableCount == 2, "reset-card count was not parsed")
+    try expect(
+        snapshot.resetCredits?.earliestExpiration == Date(timeIntervalSince1970: 1_800_800_000),
+        "earliest reset-card expiration was not selected"
+    )
     try expect(snapshot.menuWindow?.windowDurationMinutes == 10_080, "longest window was not selected")
     try expect(snapshot.menuWindow?.remainingPercent == 92, "remaining percent is incorrect")
     try expect(QuotaSeverity.forRemainingPercent(20) == .normal, "20% should be normal")
@@ -38,6 +50,20 @@ do {
     try expect(QuotaPeriodKind.from(minutes: 43_200) == .monthly, "monthly period misclassified")
     try expect(TargetApplication.matches(bundleIdentifier: "com.openai.codex", localizedName: "ChatGPT"), "Codex app not recognized")
     try expect(!TargetApplication.matches(bundleIdentifier: "com.apple.Safari", localizedName: "Safari"), "unrelated app recognized")
+
+    let tokenUsage = try TokenUsageParser.parseResult([
+        "dailyUsageBuckets": [
+            ["startDate": "2026-09-03", "tokens": 112_536_952],
+            ["startDate": "2026-09-02", "tokens": 63_323_377]
+        ]
+    ])
+    try expect(tokenUsage.dailyBuckets.count == 2, "daily token buckets were not parsed")
+    try expect(tokenUsage.latestBucket?.startDate == "2026-09-03", "latest token date is incorrect")
+    try expect(tokenUsage.latestBucket?.tokens == 112_536_952, "latest token total is incorrect")
+    try expect(tokenUsage.bucket(startingOn: "2026-09-02")?.tokens == 63_323_377, "token date lookup failed")
+
+    let emptyTokenUsage = try TokenUsageParser.parseResult(["dailyUsageBuckets": NSNull()])
+    try expect(emptyTokenUsage.dailyBuckets.isEmpty, "null token buckets should produce an empty snapshot")
     do {
         _ = try RateLimitParser.parseResult([:])
         throw SelfTestFailure.failed("missing windows did not fail")

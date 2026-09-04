@@ -54,6 +54,7 @@ public enum RateLimitParser {
         var windows: [QuotaWindow] = []
         var discoveredPlan: String?
         var creditBalance: String?
+        let resetCredits = parseResetCredits(result["rateLimitResetCredits"])
 
         for (fallbackID, bucket) in buckets {
             let limitID = string(bucket["limitId"]) ?? fallbackID
@@ -100,7 +101,26 @@ public enum RateLimitParser {
             windows: unique,
             planType: discoveredPlan,
             creditBalance: creditBalance,
+            resetCredits: resetCredits,
             receivedAt: receivedAt
+        )
+    }
+
+    private static func parseResetCredits(_ value: Any?) -> RateLimitResetCredits? {
+        guard
+            let object = value as? [String: Any],
+            let availableCount = integer(object["availableCount"])
+        else {
+            return nil
+        }
+
+        let expirationDates = (object["credits"] as? [[String: Any]] ?? []).compactMap { credit -> Date? in
+            guard let timestamp = number(credit["expiresAt"]), timestamp.isFinite else { return nil }
+            return Date(timeIntervalSince1970: timestamp)
+        }
+        return RateLimitResetCredits(
+            availableCount: availableCount,
+            earliestExpiration: expirationDates.min()
         )
     }
 

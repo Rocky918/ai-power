@@ -28,3 +28,14 @@
 "notification.title" = "AI Power 用量提醒";
 "notification.body" = "%@仅剩 %d%%。";
 "status.tooltip" = "AI Power · Codex 剩余用量";
+"token.usage" = "Token 用量";
+"token.today" = "今日 Token";
+"token.latest" = "最近统计";
+"token.waiting" = "等待服务端统计";
+"token.unavailable" = "暂时无法读取";
+"token.server.updated" = "服务端统计 · 刚刚更新";
+"token.showing.last" = "服务端统计 · 显示上次数据";
+"token.delayed" = "%@ · 数据可能延迟";
+"reset.cards" = "重置卡";
+"reset.cards.count" = "%d 张";
+"reset.cards.expires" = "%@到期";

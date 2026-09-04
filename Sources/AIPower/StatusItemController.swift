@@ -3,7 +3,7 @@ import Combine
 import SwiftUI
 
 @MainActor
-final class StatusItemController {
+final class StatusItemController: NSObject, NSPopoverDelegate {
     private let model: AppModel
     private let settings: AppSettings
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -14,8 +14,10 @@ final class StatusItemController {
     init(model: AppModel, settings: AppSettings) {
         self.model = model
         self.settings = settings
+        super.init()
         popover.behavior = .transient
         popover.animates = true
+        popover.delegate = self
         popover.contentViewController = NSHostingController(rootView: UsagePopoverView(
             model: model,
             settings: settings,
@@ -40,12 +42,18 @@ final class StatusItemController {
     @objc private func togglePopover() {
         guard let button = statusItem.button else { return }
         if popover.isShown {
+            model.setPopoverIsVisible(false)
             popover.performClose(nil)
         } else {
+            model.setPopoverIsVisible(true)
             model.refresh()
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             NSApp.activate(ignoringOtherApps: true)
         }
+    }
+
+    func popoverDidClose(_ notification: Notification) {
+        model.setPopoverIsVisible(false)
     }
 
     private func render() {

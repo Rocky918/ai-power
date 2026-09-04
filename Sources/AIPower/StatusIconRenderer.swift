@@ -8,11 +8,11 @@ enum StatusIconRenderer {
     }()
 
     static func image(remaining: Double?, shortCycleSeverity: QuotaSeverity?) -> NSImage {
-        let image = NSImage(size: NSSize(width: 22, height: 18), flipped: false) { _ in
-            let ring = NSRect(x: 1, y: 1, width: 16, height: 16)
+        let image = NSImage(size: NSSize(width: 25, height: 21), flipped: false) { _ in
+            let ring = NSRect(x: 1, y: 1, width: 19, height: 19)
             NSColor.labelColor.withAlphaComponent(0.18).setStroke()
-            let track = NSBezierPath(ovalIn: ring.insetBy(dx: 1.15, dy: 1.15))
-            track.lineWidth = 1.8
+            let track = NSBezierPath(ovalIn: ring.insetBy(dx: 1.25, dy: 1.25))
+            track.lineWidth = 2.1
             track.stroke()
 
             if let remaining {
@@ -20,25 +20,30 @@ enum StatusIconRenderer {
                 let progress = NSBezierPath()
                 progress.appendArc(
                     withCenter: NSPoint(x: ring.midX, y: ring.midY),
-                    radius: 6.85,
+                    radius: 8.25,
                     startAngle: 90,
                     endAngle: 90 - CGFloat(min(max(remaining, 0), 100) / 100 * 360),
                     clockwise: true
                 )
-                progress.lineWidth = 2.05
+                progress.lineWidth = 2.35
                 progress.lineCapStyle = .round
                 progress.stroke()
             }
 
             if let logo {
-                logo.draw(in: NSRect(x: 5.2, y: 5.2, width: 7.6, height: 7.6))
-                NSColor.labelColor.setFill()
-                NSRect(x: 5.2, y: 5.2, width: 7.6, height: 7.6).fill(using: .sourceAtop)
+                let logoRect = NSRect(x: 4.5, y: 4.5, width: 12, height: 12)
+                let tintedLogo = NSImage(size: logoRect.size, flipped: false) { bounds in
+                    logo.draw(in: bounds)
+                    NSColor.labelColor.setFill()
+                    bounds.fill(using: .sourceAtop)
+                    return true
+                }
+                tintedLogo.draw(in: logoRect)
             }
 
             if let severity = shortCycleSeverity, severity != .normal {
                 severityColor(severity).setFill()
-                NSBezierPath(ovalIn: NSRect(x: 18, y: 2, width: 4, height: 4)).fill()
+                NSBezierPath(ovalIn: NSRect(x: 21, y: 2, width: 4, height: 4)).fill()
             }
             return true
         }
