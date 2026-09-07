@@ -30,6 +30,8 @@ Seeing your remaining allowance while coding or using AI helps you plan your nex
 
 ## Download and installation
 
+**1.1.1 fixes a resource-bundle path error that caused earlier builds to crash on other Macs.** Users of 1.1.0 should replace it with the latest release.
+
 Download the latest `AI-Power-*-macOS.zip` from [Releases](https://github.com/Rocky918/ai-power/releases).
 
 One Universal 2 archive supports both Intel and M-series Macs. For an update, quit the running AI Power app, then replace the previous version in Applications.
@@ -78,6 +80,14 @@ Run the core self-test:
 ```shell
 swift run AIPowerCoreSelfTest
 ```
+
+Verify that the release ZIP can load its logo and both languages without access to the development directory (macOS, Python 3 required):
+
+```shell
+python3 Scripts/check-packaged-resources.py dist/AI-Power-1.1.1-macOS.zip
+```
+
+The check also ensures missing packaged resources cannot fall back to the development directory. Version 1.1.1 has passed an isolated startup test on Intel; ARM compilation and signature checks passed, but testing on physical Apple silicon hardware is still pending.
 
 ## License and trademarks
 

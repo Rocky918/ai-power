@@ -61,11 +61,11 @@ final class AppSettings: ObservableObject {
 
     func text(_ key: String) -> String {
         let candidates = resolvedLocalizationCode == "zh-Hans" ? ["zh-Hans", "zh-hans"] : ["en"]
-        guard let resourceURL = Bundle.module.resourceURL,
+        guard let resourceURL = AppResources.bundle.resourceURL,
               let bundle = candidates.lazy.compactMap({ code -> Bundle? in
                   Bundle(url: resourceURL.appendingPathComponent("\(code).lproj", isDirectory: true))
               }).first else {
-            return Bundle.module.localizedString(forKey: key, value: key, table: nil)
+            return AppResources.bundle.localizedString(forKey: key, value: key, table: nil)
         }
         return bundle.localizedString(forKey: key, value: key, table: nil)
     }

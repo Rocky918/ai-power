@@ -3,7 +3,7 @@ import AIPowerCore
 
 enum StatusIconRenderer {
     private static let logo: NSImage? = {
-        guard let url = Bundle.module.url(forResource: "OpenAILogo", withExtension: "svg") else { return nil }
+        guard let url = AppResources.bundle.url(forResource: "OpenAILogo", withExtension: "svg") else { return nil }
         return NSImage(contentsOf: url)
     }()
 

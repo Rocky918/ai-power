@@ -7,13 +7,15 @@ BUILD_ROOT="$PROJECT_ROOT/.build"
 DIST_ROOT="$PROJECT_ROOT/dist"
 APP_PATH="$DIST_ROOT/AI Power.app"
 CONTENTS_PATH="$APP_PATH/Contents"
+VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PROJECT_ROOT/Packaging/Info.plist")
+ZIP_PATH="$DIST_ROOT/AI-Power-$VERSION-macOS.zip"
 X86_BUILD="$BUILD_ROOT/release-x86_64"
 ARM_BUILD="$BUILD_ROOT/release-arm64"
 X86_RELEASE="$X86_BUILD/x86_64-apple-macosx/release"
 ARM_RELEASE="$ARM_BUILD/arm64-apple-macosx/release"
 
-if [[ -e "$APP_PATH" ]]; then
-    print -u2 "Refusing to overwrite existing artifact: $APP_PATH"
+if [[ -e "$APP_PATH" || -e "$ZIP_PATH" ]]; then
+    print -u2 "Refusing to overwrite existing app or archive: $APP_PATH / $ZIP_PATH"
     exit 3
 fi
 
@@ -40,7 +42,8 @@ iconutil -c icns "$ICONSET_PATH" -o "$CONTENTS_PATH/Resources/AppIcon.icns"
 
 codesign --force --deep --sign - "$APP_PATH"
 plutil -lint "$CONTENTS_PATH/Info.plist"
-codesign --verify --deep --strict --verbose=2 "$APP_PATH"
-ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$DIST_ROOT/AI-Power-1.1.0-macOS.zip"
+codesign --verify --all-architectures --deep --strict --verbose=2 "$APP_PATH"
+"$CONTENTS_PATH/MacOS/AI Power" --check-resources
+ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_PATH"
 lipo -archs "$CONTENTS_PATH/MacOS/AI Power"
 print "$APP_PATH"

@@ -26,7 +26,7 @@ struct QuotaLogoView: View {
     }
 
     @ViewBuilder private var logo: some View {
-        if let url = Bundle.module.url(forResource: "OpenAILogo", withExtension: "svg"),
+        if let url = AppResources.bundle.url(forResource: "OpenAILogo", withExtension: "svg"),
            let image = NSImage(contentsOf: url) {
             if isRefreshing && !reduceMotion {
                 TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { context in

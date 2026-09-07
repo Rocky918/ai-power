@@ -5,6 +5,11 @@ enum AIPowerMain {
     private static var retainedDelegate: AppDelegate?
 
     static func main() {
+        if CommandLine.arguments.contains("--check-resources") {
+            let valid = AppResources.validate()
+            print(valid ? "AI Power resources OK: logo, English, Simplified Chinese" : "AI Power resources FAILED")
+            exit(valid ? 0 : 1)
+        }
         let application = NSApplication.shared
         let delegate = AppDelegate()
         retainedDelegate = delegate

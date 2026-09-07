@@ -30,6 +30,8 @@ AI Power 是一款原生 macOS 菜单栏工具。当 ChatGPT 或 Codex 桌面应
 
 ## 下载与安装
 
+**1.1.1 修复了旧版在其他 Mac 上因资源包路径错误而启动崩溃的问题。** 已安装 1.1.0 的用户请下载最新版本替换。
+
 从 [Releases](https://github.com/Rocky918/ai-power/releases) 下载最新的 `AI-Power-*-macOS.zip`。
 
 一个 Universal 2 安装包同时支持 Intel 和 M 系列芯片，无需分别下载。更新时先退出正在运行的 AI Power，再用新版替换“应用程序”里的旧版。
@@ -78,6 +80,14 @@ zsh Scripts/package.sh
 ```shell
 swift run AIPowerCoreSelfTest
 ```
+
+验证发布 ZIP 在无法访问开发目录时仍能加载 Logo 和中英文资源（macOS，需要 Python 3）：
+
+```shell
+python3 Scripts/check-packaged-resources.py dist/AI-Power-1.1.1-macOS.zip
+```
+
+该检查还会验证缺少包内资源时不会误用开发目录。1.1.1 已在 Intel Mac 完成隔离启动测试；ARM 已通过构建和签名检查，Apple Silicon 实机复测尚待完成。
 
 ## 许可证与商标
 
